@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: vignan-school
+data:
+  DB_HOST: postgres-service
+  DB_PORT: "5432"
+  DB_NAME: vignan_school
+  DB_USER: vignan_admin
+  PORT: "5000"
