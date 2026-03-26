@@ -22,11 +22,21 @@ echo ""
 # Step 2: Install NGINX Ingress Controller
 echo "[2/7] Installing NGINX Ingress Controller..."
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
-echo "  Waiting for ingress controller to be ready..."
+
+echo "  Waiting for ingress controller pod to be created..."
+for i in $(seq 1 30); do
+  if kubectl get pods -n ingress-nginx -l app.kubernetes.io/component=controller 2>/dev/null | grep -q "ingress-nginx"; then
+    echo "  Pod found! Waiting for it to become ready..."
+    break
+  fi
+  echo "  Attempt $i/30 - Pod not yet created, waiting 5s..."
+  sleep 5
+done
+
 kubectl wait --namespace ingress-nginx \
   --for=condition=ready pod \
   --selector=app.kubernetes.io/component=controller \
-  --timeout=120s
+  --timeout=180s
 echo "  Ingress controller ready!"
 echo ""
 
@@ -61,11 +71,17 @@ kubectl create configmap postgres-init-script \
   --namespace=vignan-school \
   --dry-run=client -o yaml | kubectl apply -f -
 kubectl apply -f "$PROJECT_DIR/k8s/postgres.yaml"
-echo "  Waiting for PostgreSQL to be ready..."
+echo "  Waiting for PostgreSQL pod to be created..."
+for i in $(seq 1 20); do
+  if kubectl get pods -n vignan-school -l app=postgres 2>/dev/null | grep -q "postgres"; then
+    break
+  fi
+  sleep 3
+done
 kubectl wait --namespace vignan-school \
   --for=condition=ready pod \
   --selector=app=postgres \
-  --timeout=120s
+  --timeout=180s
 echo "  PostgreSQL is ready!"
 echo ""
 
@@ -75,17 +91,25 @@ kubectl apply -f "$PROJECT_DIR/k8s/backend.yaml"
 kubectl apply -f "$PROJECT_DIR/k8s/frontend.yaml"
 kubectl apply -f "$PROJECT_DIR/k8s/ingress.yaml"
 
+echo "  Waiting for pods to be scheduled..."
+for i in $(seq 1 20); do
+  if kubectl get pods -n vignan-school -l app=backend 2>/dev/null | grep -q "backend"; then
+    break
+  fi
+  sleep 3
+done
+
 echo "  Waiting for backend to be ready..."
 kubectl wait --namespace vignan-school \
   --for=condition=ready pod \
   --selector=app=backend \
-  --timeout=120s
+  --timeout=180s
 
 echo "  Waiting for frontend to be ready..."
 kubectl wait --namespace vignan-school \
   --for=condition=ready pod \
   --selector=app=frontend \
-  --timeout=120s
+  --timeout=180s
 
 echo ""
 echo "============================================"
