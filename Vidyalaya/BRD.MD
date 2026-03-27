@@ -598,4 +598,6 @@ Attendance
 Parent App Notifications
 Exam Results
 
+PS: Check more information in Images folder for reference
+
 
